@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>30-Day Deal Tracker</title>
+<style>
+  :root{
+    --paper:#F6F3EC;
+    --ink:#22201B;
+    --ink-soft:#5B564C;
+    --line: rgba(34,32,27,0.14);
+    --brick:#A6462E;
+    --brick-soft: rgba(166,70,46,0.10);
+    --moss:#4A5D3A;
+    --moss-soft: rgba(74,93,58,0.12);
+    --paper-2:#EFEAE0;
+    --font-display: 'Iowan Old Style','Palatino Linotype', Georgia, serif;
+    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --font-mono: 'SFMono-Regular', Consolas, Menlo, monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--font-body);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.01ms !important; transition-duration:0.01ms !important;}
+  }
+  .wrap{max-width:640px; margin:0 auto; padding:32px 20px 80px;}
+
+  header{margin-bottom:28px;}
+  .kicker{
+    font-family:var(--font-mono);
+    font-size:12px;
+    color:var(--brick);
+    margin-bottom:6px;
+  }
+  h1{
+    font-family:var(--font-display);
+    font-weight:400;
+    font-size:30px;
+    margin:0 0 6px;
+  }
+  header p{color:var(--ink-soft); margin:0; font-size:15px;}
+
+  .progress-card{
+    border:1px solid var(--line);
+    background:var(--paper-2);
+    border-radius:3px;
+    padding:18px 20px;
+    margin-bottom:24px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .progress-stat{font-family:var(--font-display); font-size:26px;}
+  .progress-label{font-size:12.5px; color:var(--ink-soft); margin-top:2px;}
+  .bar-track{
+    flex:1; min-width:140px;
+    height:6px;
+    background:var(--line);
+    border-radius:3px;
+    overflow:hidden;
+  }
+  .bar-fill{
+    height:100%;
+    background:var(--moss);
+    width:0%;
+    transition: width .4s ease;
+  }
+
+  .day-nav{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:16px;
+    gap:10px;
+  }
+  .day-nav button{
+    background:none;
+    border:1px solid var(--line);
+    border-radius:3px;
+    padding:8px 14px;
+    font-family:var(--font-body);
+    font-size:14px;
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .day-nav button:hover{border-color:var(--brick); color:var(--brick);}
+  .day-nav button:disabled{opacity:0.35; cursor:default;}
+  .day-nav button:disabled:hover{border-color:var(--line); color:var(--ink);}
+  .day-title{
+    font-family:var(--font-display);
+    font-size:20px;
+    text-align:center;
+  }
+  .day-week{
+    font-family:var(--font-mono);
+    font-size:11px;
+    color:var(--brick);
+    display:block;
+    margin-bottom:2px;
+  }
+
+  .task-list{
+    border:1px solid var(--line);
+    border-radius:3px;
+    overflow:hidden;
+    background:#fff;
+    margin-bottom:24px;
+  }
+  .task{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    padding:16px 18px;
+    border-bottom:1px solid var(--line);
+    cursor:pointer;
+  }
+  .task:last-child{border-bottom:none;}
+  .task:hover{background:var(--paper-2);}
+  .task input{
+    margin-top:3px;
+    width:17px; height:17px;
+    accent-color:var(--moss);
+    flex-shrink:0;
+    cursor:pointer;
+  }
+  .task-text{font-size:15px;}
+  .task.done .task-text{color:var(--ink-soft); text-decoration:line-through;}
+
+  .day-picker{
+    display:grid;
+    grid-template-columns:repeat(10,1fr);
+    gap:6px;
+    margin-bottom:28px;
+  }
+  .day-picker button{
+    aspect-ratio:1;
+    border:1px solid var(--line);
+    border-radius:3px;
+    background:#fff;
+    font-family:var(--font-mono);
+    font-size:11px;
+    color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .day-picker button.current{border-color:var(--brick); color:var(--brick); font-weight:600;}
+  .day-picker button.complete{background:var(--moss-soft); border-color:var(--moss); color:var(--moss);}
+
+  .reset-row{text-align:center;}
+  .reset-row button{
+    background:none;
+    border:none;
+    color:var(--ink-soft);
+    font-size:12.5px;
+    text-decoration:underline;
+    cursor:pointer;
+    padding:6px;
+  }
+  .reset-row button:hover{color:var(--brick);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kicker">Wholesaling — 30 day plan</div>
+    <h1>Deal Tracker</h1>
+    <p>A short list each day. Check off what's done, come back tomorrow for the next one.</p>
+  </header>
+
+  <div class="progress-card">
+    <div>
+      <div class="progress-stat" id="progress-stat">0 / 30</div>
+      <div class="progress-label">days fully complete</div>
+    </div>
+    <div class="bar-track"><div class="bar-fill" id="bar-fill"></div></div>
+  </div>
+
+  <div class="day-nav">
+    <button id="prev-btn">← Prev</button>
+    <div>
+      <span class="day-week" id="week-label">Week 1</span>
+      <div class="day-title" id="day-title">Day 1</div>
+    </div>
+    <button id="next-btn">Next →</button>
+  </div>
+
+  <div class="task-list" id="task-list"></div>
+
+  <div class="day-picker" id="day-picker"></div>
+
+  <div class="reset-row">
+    <button id="reset-btn">Reset all progress</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var WEEKS = [
+    { label: "Week 1 — Build the pipeline", days: [
+      "Pick one new street or area in Villa Park or Lombard",
+      "Scan it on Google Street View for neglected-looking homes (aim for 2-3)",
+      "Look up each candidate on the DuPage County property portal",
+      "Check owner mailing address vs property address (absentee owner?)",
+      "Add any promising address to your list with what you noticed"
+    ]},
+    { label: "Week 2 — First contact", days: [
+      "Talk to your dad about your candidate list — get sign-off before contacting anyone",
+      "Send 1-2 approved letters or contact attempts to candidates",
+      "Log who you contacted and when",
+      "Keep building the list — check 2-3 more addresses today",
+      "Decide with your dad: one final Shameem follow-up, or treat that lead as closed for now"
+    ]},
+    { label: "Week 3 — Follow-up + learning", days: [
+      "Follow up once with anyone from Week 2 who hasn't responded",
+      "Read through what a real purchase agreement contains (just learning, not signing)",
+      "Read through what an assignment contract contains",
+      "Add 1-2 new candidate addresses to keep the pipeline moving",
+      "Check in with your dad on where things stand overall"
+    ]},
+    { label: "Week 4 — Convert or reset", days: [
+      "If anyone's responded: have your dad join every conversation about price/terms",
+      "If you have interest: loop in a legitimate buyer (Andre, or a REIA contact) with your dad",
+      "If nobody's responded yet: review your list-building process — what would you change?",
+      "Write down what you learned this month, even if no deal closed yet",
+      "Set your plan for month 2 with your dad"
+    ]}
+  ];
+
+  var TASKS = [];
+  WEEKS.forEach(function(w){ w.days.forEach(function(t){ TASKS.push({week: w.label, text: t}); }); });
+
+  var current = 0;
+  var state = {};
+
+  function taskKey(day){ return 'day-' + day; }
+
+  async function loadState(){
+    try{
+      var res = await window.storage.get('tracker-state', false);
+      if(res && res.value){ state = JSON.parse(res.value); }
+    }catch(e){ state = {}; }
+    render();
+  }
+
+  async function saveState(){
+    try{ await window.storage.set('tracker-state', JSON.stringify(state), false); }
+    catch(e){ /* best effort */ }
+  }
+
+  function dayComplete(dayIndex){
+    var checks = state[taskKey(dayIndex)];
+    return checks && checks.length === 5 && checks.every(Boolean);
+  }
+
+  function completedCount(){
+    var c = 0;
+    for(var i=0;i<30;i++){ if(dayComplete(i)) c++; }
+    return c;
+  }
+
+  function render(){
+    var weekIdx = Math.floor(current/5);
+    var dayInWeek = current % 5;
+    var week = WEEKS[weekIdx];
+
+    document.getElementById('week-label').textContent = week.label;
+    document.getElementById('day-title').textContent = 'Day ' + (current+1);
+    document.getElementById('prev-btn').disabled = current === 0;
+    document.getElementById('next-btn').disabled = current === 29;
+
+    var checks = state[taskKey(current)] || [false,false,false,false,false];
+    var list = document.getElementById('task-list');
+    list.innerHTML = '';
+    week.days.forEach(function(text, i){
+      var row = document.createElement('div');
+      row.className = 'task' + (checks[i] ? ' done' : '');
+      row.innerHTML = '<input type="checkbox" ' + (checks[i] ? 'checked' : '') + '><span class="task-text"></span>';
+      row.querySelector('.task-text').textContent = text;
+      row.addEventListener('click', function(e){
+        if(e.target.tagName !== 'INPUT'){
+          var cb = row.querySelector('input');
+          cb.checked = !cb.checked;
+        }
+        toggleTask(i, row.querySelector('input').checked);
+      });
+      list.appendChild(row);
+    });
+
+    var completed = completedCount();
+    document.getElementById('progress-stat').textContent = completed + ' / 30';
+    document.getElementById('bar-fill').style.width = (completed/30*100) + '%';
+
+    var picker = document.getElementById('day-picker');
+    picker.innerHTML = '';
+    for(var d=0; d<30; d++){
+      var btn = document.createElement('button');
+      btn.textContent = d+1;
+      if(d === current) btn.className = 'current';
+      else if(dayComplete(d)) btn.className = 'complete';
+      (function(dd){ btn.addEventListener('click', function(){ current = dd; render(); }); })(d);
+      picker.appendChild(btn);
+    }
+  }
+
+  function toggleTask(i, checked){
+    var checks = state[taskKey(current)] || [false,false,false,false,false];
+    checks[i] = checked;
+    state[taskKey(current)] = checks;
+    saveState();
+    render();
+  }
+
+  document.getElementById('prev-btn').addEventListener('click', function(){
+    if(current > 0){ current--; render(); }
+  });
+  document.getElementById('next-btn').addEventListener('click', function(){
+    if(current < 29){ current++; render(); }
+  });
+  document.getElementById('reset-btn').addEventListener('click', function(){
+    if(confirm('Reset all 30 days of progress?')){
+      state = {};
+      saveState();
+      render();
+    }
+  });
+
+  loadState();
+})();
+</script>
+</body>
+</html>
